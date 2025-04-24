@@ -3,22 +3,25 @@ import {
   Container, Typography, Box, TextField, Button, 
   Card, CardContent, Alert, CircularProgress, Snackbar,
   AppBar, Toolbar, Tabs, Tab, Fade, Grow, Paper, IconButton,
-  useTheme, useMediaQuery
+  useTheme, useMediaQuery, Divider, Link
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { db } from './firebase';
 import { 
-  collection, addDoc, updateDoc, doc,
+  collection, addDoc, updateDoc, doc, deleteDoc,
   query, onSnapshot, Timestamp
 } from 'firebase/firestore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
 
 // HabitCard Component with animation and completion status
-const HabitCard = ({ habit, onComplete }) => (
+const HabitCard = ({ habit, onComplete, onDelete }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -28,15 +31,24 @@ const HabitCard = ({ habit, onComplete }) => (
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">{habit.name}</Typography>
-          <IconButton 
-            onClick={() => onComplete(habit.id, !habit.completed_today)}
-            color={habit.completed_today ? "success" : "default"}
-          >
-            {habit.completed_today ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
-          </IconButton>
+          <Box>
+            <IconButton 
+              onClick={() => onComplete(habit.id, !habit.completed_today)}
+              color={habit.completed_today ? "success" : "default"}
+            >
+              {habit.completed_today ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
+            </IconButton>
+            <IconButton 
+              onClick={() => onDelete(habit.id)}
+              color="error"
+              size="small"
+            >
+              <DeleteOutlineIcon />
+            </IconButton>
+          </Box>
         </Box>
-        <Typography color="textSecondary">{habit.description}</Typography>
-        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography color="textSecondary" sx={{ mt: 1, mb: 2 }}>{habit.description}</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography>
             Streak: {habit.streak} days
           </Typography>
@@ -230,217 +242,252 @@ function App() {
     }
   };
 
+  // Delete a habit
+  const handleDelete = async (habitId) => {
+    try {
+      const habitRef = doc(db, 'habits', habitId);
+      await deleteDoc(habitRef);
+      
+      setNotification({
+        open: true,
+        message: 'Habit deleted successfully',
+        type: 'success'
+      });
+    } catch (err) {
+      console.error("Error deleting habit:", err);
+      setNotification({
+        open: true,
+        message: 'Failed to delete habit',
+        type: 'error'
+      });
+    }
+  };
+
   // Handle tab change
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
   };
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <AppBar 
-        position="static" 
-        elevation={0}
-        sx={{ 
-          background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
-          padding: isMobile ? '0.5rem 0' : '1rem 0'
-        }}
-      >
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
+    }}>
+      {/* Header */}
+      <AppBar position="static" elevation={0} sx={{ 
+        background: 'transparent',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
         <Container maxWidth="lg">
-          <Toolbar 
-            disableGutters
-            sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexDirection: isMobile ? 'column' : 'row',
-              gap: isMobile ? 2 : 0
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <PsychologyIcon sx={{ mr: 1, fontSize: isMobile ? 24 : 32 }} />
-              <Typography 
-                variant={isMobile ? "h6" : "h5"}
-                component="div" 
-                sx={{ 
-                  fontWeight: 600,
-                  letterSpacing: '0.5px'
-                }}
-              >
-                Habit Tracker
+          <Toolbar sx={{ justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <PsychologyIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+              <Typography variant="h5" component="div" sx={{ 
+                fontWeight: 600,
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                Smart Habit Tracker
               </Typography>
             </Box>
-            
-            <Tabs 
-              value={currentTab} 
-              onChange={handleTabChange} 
-              textColor="inherit"
-              sx={{
-                '& .MuiTabs-indicator': {
-                  backgroundColor: 'white',
-                  height: '3px',
-                },
-                '& .MuiTab-root': {
-                  minWidth: isMobile ? 'auto' : 120,
-                  padding: isMobile ? '8px 4px' : '12px 16px',
-                  fontSize: isMobile ? '0.7rem' : '0.9rem',
-                  fontWeight: 500,
-                  '&.Mui-selected': {
-                    color: 'white',
-                  },
-                },
-              }}
-            >
-              <Tab 
-                icon={<PsychologyIcon />} 
-                label={isMobile ? null : "All Habits"} 
-                iconPosition="start"
-              />
-              <Tab 
-                icon={<AddCircleOutlineIcon />} 
-                label={isMobile ? null : "Create Habit"} 
-                iconPosition="start"
-              />
-              <Tab 
-                icon={<BarChartIcon />} 
-                label={isMobile ? null : "Statistics"} 
-                iconPosition="start"
-              />
-            </Tabs>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <IconButton color="primary" href="https://github.com" target="_blank">
+                <GitHubIcon />
+              </IconButton>
+              <IconButton color="primary" href="https://linkedin.com" target="_blank">
+                <LinkedInIcon />
+              </IconButton>
+            </Box>
           </Toolbar>
         </Container>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{ py: 4, px: isMobile ? 2 : 4 }}>
+      {/* Main Content */}
+      <Container maxWidth="lg" sx={{ 
+        flex: 1,
+        py: 4,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4
+      }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
 
-        {currentTab === 0 && (
-          <Fade in={true}>
-            <Box>
-              <Typography variant="h5" gutterBottom>
-                Your Habits
-              </Typography>
-              {habits.length === 0 ? (
-                <Typography color="textSecondary" align="center">
-                  {error ? error : 'No habits created yet. Start by creating one!'}
-                </Typography>
+        {/* Create Habit Section */}
+        <Paper elevation={3} sx={{ 
+          p: 4,
+          borderRadius: 2,
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <Typography variant="h4" gutterBottom sx={{ 
+            fontWeight: 600,
+            color: 'primary.main',
+            mb: 3
+          }}>
+            Create New Habit
+          </Typography>
+          <Box component="form" onSubmit={handleCreateHabit} noValidate sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Habit Name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              margin="normal"
+              required
+              size="medium"
+              disabled={isSubmitting}
+              error={!!error}
+              helperText={error}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: 'rgba(0, 0, 0, 0.23)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                },
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              margin="normal"
+              multiline
+              minRows={3}
+              maxRows={5}
+              placeholder="Enter a description for your habit..."
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: 'rgba(0, 0, 0, 0.23)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                },
+                '& .MuiInputBase-input': {
+                  padding: '14px',
+                },
+              }}
+            />
+            <Button 
+              type="submit" 
+              variant="contained" 
+              sx={{ 
+                mt: 3,
+                minWidth: 200,
+                height: 48,
+                borderRadius: 2,
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #1976D2 30%, #1E88E5 90%)',
+                }
+              }}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <CircularProgress size={24} color="inherit" />
               ) : (
-                habits.map(habit => (
-                  <HabitCard
-                    key={habit.id}
-                    habit={habit}
-                    onComplete={handleComplete}
-                  />
-                ))
+                'Create Habit'
               )}
-            </Box>
-          </Fade>
-        )}
+            </Button>
+          </Box>
+        </Paper>
 
-        {currentTab === 1 && (
-          <Grow in={true}>
-            <Paper elevation={3} sx={{ p: isMobile ? 2 : 3 }}>
-              <Typography variant="h5" gutterBottom>
-                Create New Habit
-              </Typography>
-              <Box component="form" onSubmit={handleCreateHabit} noValidate>
-                <TextField
-                  fullWidth
-                  label="Habit Name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  margin="normal"
-                  required
-                  size={isMobile ? "small" : "medium"}
-                  disabled={isSubmitting}
-                  error={!!error}
-                  helperText={error}
-                  autoFocus
-                />
-                <TextField
-                  fullWidth
-                  label="Description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  margin="normal"
-                  multiline
-                  rows={isMobile ? 2 : 4}
-                  size={isMobile ? "small" : "medium"}
-                  disabled={isSubmitting}
-                />
-                <Button 
-                  type="submit" 
-                  variant="contained" 
-                  sx={{ 
-                    mt: 2,
-                    minWidth: 120,
-                    position: 'relative',
-                    height: 36
-                  }}
-                  disabled={isSubmitting}
-                  fullWidth={isMobile}
-                >
-                  {isSubmitting ? (
-                    <CircularProgress 
-                      size={24} 
-                      sx={{ 
-                        color: 'inherit',
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        marginTop: '-12px',
-                        marginLeft: '-12px',
-                      }}
-                    />
-                  ) : (
-                    'Create Habit'
-                  )}
-                </Button>
-              </Box>
-            </Paper>
-          </Grow>
-        )}
-
-        {currentTab === 2 && (
-          <Fade in={true}>
-            <Box>
-              <Typography variant="h5" gutterBottom>
-                Statistics
-              </Typography>
-              <Paper elevation={3} sx={{ p: isMobile ? 2 : 3 }}>
-                <Typography variant="h6" sx={{ mb: 1 }}>
-                  Total Habits: {stats.totalHabits}
-                </Typography>
-                <Typography variant="h6" sx={{ mb: 1 }}>
-                  Total Streaks: {stats.totalStreaks}
-                </Typography>
-                <Typography variant="h6">
-                  Completed Today: {stats.completedToday}
-                </Typography>
-              </Paper>
-            </Box>
-          </Fade>
-        )}
-
-        <Snackbar
-          open={notification.open}
-          autoHideDuration={3000}
-          onClose={() => setNotification({ ...notification, open: false })}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        >
-          <Alert 
-            onClose={() => setNotification({ ...notification, open: false })} 
-            severity={notification.type}
-            sx={{ width: '100%' }}
-          >
-            {notification.message}
-          </Alert>
-        </Snackbar>
+        {/* Habits List Section */}
+        <Paper elevation={3} sx={{ 
+          p: 4,
+          borderRadius: 2,
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <Typography variant="h4" gutterBottom sx={{ 
+            fontWeight: 600,
+            color: 'primary.main',
+            mb: 3
+          }}>
+            Your Habits
+          </Typography>
+          {habits.length === 0 ? (
+            <Typography color="textSecondary" align="center" sx={{ py: 4 }}>
+              No habits created yet. Start by creating one!
+            </Typography>
+          ) : (
+            habits.map(habit => (
+              <HabitCard
+                key={habit.id}
+                habit={habit}
+                onComplete={handleComplete}
+                onDelete={handleDelete}
+              />
+            ))
+          )}
+        </Paper>
       </Container>
+
+      {/* Footer */}
+      <Box component="footer" sx={{ 
+        py: 3,
+        mt: 'auto',
+        background: 'rgba(255, 255, 255, 0.9)',
+        backdropFilter: 'blur(10px)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <Container maxWidth="lg">
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2
+          }}>
+            <Typography variant="body2" color="text.secondary">
+              © {new Date().getFullYear()} Smart Habit Tracker. All rights reserved.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Link href="#" color="inherit" underline="hover">
+                Privacy Policy
+              </Link>
+              <Link href="#" color="inherit" underline="hover">
+                Terms of Service
+              </Link>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+
+      {/* Notification Snackbar */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={3000}
+        onClose={() => setNotification({ ...notification, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setNotification({ ...notification, open: false })} 
+          severity={notification.type}
+          sx={{ width: '100%' }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
