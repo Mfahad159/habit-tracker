@@ -337,11 +337,42 @@ function App() {
                   iconPosition="start"
                 />
               </Tabs>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <IconButton color="primary" href="https://github.com" target="_blank">
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 1,
+                ml: 2,
+                '& .MuiIconButton-root': {
+                  transition: 'transform 0.2s',
+                  '&:hover': {
+                    transform: 'scale(1.1)',
+                    color: 'primary.main'
+                  }
+                }
+              }}>
+                <IconButton 
+                  color="primary" 
+                  href="https://github.com/Mfahad159/habit-tracker" 
+                  target="_blank"
+                  aria-label="GitHub Repository"
+                  sx={{ 
+                    '&:hover': {
+                      backgroundColor: 'rgba(33, 150, 243, 0.1)'
+                    }
+                  }}
+                >
                   <GitHubIcon />
                 </IconButton>
-                <IconButton color="primary" href="https://linkedin.com" target="_blank">
+                <IconButton 
+                  color="primary" 
+                  href="https://www.linkedin.com/in/muhammad-fahad-136436291?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app" 
+                  target="_blank"
+                  aria-label="LinkedIn Profile"
+                  sx={{ 
+                    '&:hover': {
+                      backgroundColor: 'rgba(33, 150, 243, 0.1)'
+                    }
+                  }}
+                >
                   <LinkedInIcon />
                 </IconButton>
               </Box>
