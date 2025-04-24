@@ -282,7 +282,12 @@ function App() {
         borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
       }}>
         <Container maxWidth="lg">
-          <Toolbar sx={{ justifyContent: 'space-between' }}>
+          <Toolbar sx={{ 
+            justifyContent: 'space-between',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? 2 : 0,
+            py: 2
+          }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <PsychologyIcon sx={{ fontSize: 32, color: 'primary.main' }} />
               <Typography variant="h5" component="div" sx={{ 
@@ -294,13 +299,52 @@ function App() {
                 Smart Habit Tracker
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <IconButton color="primary" href="https://github.com" target="_blank">
-                <GitHubIcon />
-              </IconButton>
-              <IconButton color="primary" href="https://linkedin.com" target="_blank">
-                <LinkedInIcon />
-              </IconButton>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Tabs 
+                value={currentTab} 
+                onChange={handleTabChange}
+                textColor="primary"
+                sx={{
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: 'primary.main',
+                    height: '3px',
+                  },
+                  '& .MuiTab-root': {
+                    minWidth: isMobile ? 'auto' : 120,
+                    padding: isMobile ? '8px 12px' : '12px 16px',
+                    fontSize: isMobile ? '0.875rem' : '1rem',
+                    fontWeight: 500,
+                    color: 'text.primary',
+                    '&.Mui-selected': {
+                      color: 'primary.main',
+                    },
+                  },
+                }}
+              >
+                <Tab 
+                  icon={<PsychologyIcon />} 
+                  label={isMobile ? null : "All Habits"} 
+                  iconPosition="start"
+                />
+                <Tab 
+                  icon={<AddCircleOutlineIcon />} 
+                  label={isMobile ? null : "Create Habit"} 
+                  iconPosition="start"
+                />
+                <Tab 
+                  icon={<BarChartIcon />} 
+                  label={isMobile ? null : "Statistics"} 
+                  iconPosition="start"
+                />
+              </Tabs>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <IconButton color="primary" href="https://github.com" target="_blank">
+                  <GitHubIcon />
+                </IconButton>
+                <IconButton color="primary" href="https://linkedin.com" target="_blank">
+                  <LinkedInIcon />
+                </IconButton>
+              </Box>
             </Box>
           </Toolbar>
         </Container>
@@ -320,126 +364,180 @@ function App() {
           </Alert>
         )}
 
-        {/* Create Habit Section */}
-        <Paper elevation={3} sx={{ 
-          p: 4,
-          borderRadius: 2,
-          background: 'rgba(255, 255, 255, 0.9)',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <Typography variant="h4" gutterBottom sx={{ 
-            fontWeight: 600,
-            color: 'primary.main',
-            mb: 3
-          }}>
-            Create New Habit
-          </Typography>
-          <Box component="form" onSubmit={handleCreateHabit} noValidate sx={{ mt: 2 }}>
-            <TextField
-              fullWidth
-              label="Habit Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              margin="normal"
-              required
-              size="medium"
-              disabled={isSubmitting}
-              error={!!error}
-              helperText={error}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: 'rgba(0, 0, 0, 0.23)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                },
-              }}
-            />
-            <TextField
-              fullWidth
-              label="Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              margin="normal"
-              multiline
-              minRows={3}
-              maxRows={5}
-              placeholder="Enter a description for your habit..."
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: 'rgba(0, 0, 0, 0.23)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                },
-                '& .MuiInputBase-input': {
-                  padding: '14px',
-                },
-              }}
-            />
-            <Button 
-              type="submit" 
-              variant="contained" 
-              sx={{ 
-                mt: 3,
-                minWidth: 200,
-                height: 48,
-                borderRadius: 2,
-                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-                '&:hover': {
-                  background: 'linear-gradient(45deg, #1976D2 30%, #1E88E5 90%)',
-                }
-              }}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <CircularProgress size={24} color="inherit" />
+        {/* All Habits Section */}
+        {currentTab === 0 && (
+          <Fade in={true}>
+            <Paper elevation={3} sx={{ 
+              p: 4,
+              borderRadius: 2,
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <Typography variant="h4" gutterBottom sx={{ 
+                fontWeight: 600,
+                color: 'primary.main',
+                mb: 3
+              }}>
+                Your Habits
+              </Typography>
+              {habits.length === 0 ? (
+                <Typography color="textSecondary" align="center" sx={{ py: 4 }}>
+                  No habits created yet. Start by creating one!
+                </Typography>
               ) : (
-                'Create Habit'
+                habits.map(habit => (
+                  <HabitCard
+                    key={habit.id}
+                    habit={habit}
+                    onComplete={handleComplete}
+                    onDelete={handleDelete}
+                  />
+                ))
               )}
-            </Button>
-          </Box>
-        </Paper>
+            </Paper>
+          </Fade>
+        )}
 
-        {/* Habits List Section */}
-        <Paper elevation={3} sx={{ 
-          p: 4,
-          borderRadius: 2,
-          background: 'rgba(255, 255, 255, 0.9)',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <Typography variant="h4" gutterBottom sx={{ 
-            fontWeight: 600,
-            color: 'primary.main',
-            mb: 3
-          }}>
-            Your Habits
-          </Typography>
-          {habits.length === 0 ? (
-            <Typography color="textSecondary" align="center" sx={{ py: 4 }}>
-              No habits created yet. Start by creating one!
-            </Typography>
-          ) : (
-            habits.map(habit => (
-              <HabitCard
-                key={habit.id}
-                habit={habit}
-                onComplete={handleComplete}
-                onDelete={handleDelete}
-              />
-            ))
-          )}
-        </Paper>
+        {/* Create Habit Section */}
+        {currentTab === 1 && (
+          <Grow in={true}>
+            <Paper elevation={3} sx={{ 
+              p: 4,
+              borderRadius: 2,
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <Typography variant="h4" gutterBottom sx={{ 
+                fontWeight: 600,
+                color: 'primary.main',
+                mb: 3
+              }}>
+                Create New Habit
+              </Typography>
+              <Box component="form" onSubmit={handleCreateHabit} noValidate sx={{ mt: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Habit Name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  margin="normal"
+                  required
+                  size="medium"
+                  disabled={isSubmitting}
+                  error={!!error}
+                  helperText={error}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'rgba(0, 0, 0, 0.23)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                    },
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  label="Description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  margin="normal"
+                  multiline
+                  minRows={3}
+                  maxRows={5}
+                  placeholder="Enter a description for your habit..."
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'rgba(0, 0, 0, 0.23)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'primary.main',
+                      },
+                    },
+                    '& .MuiInputBase-input': {
+                      padding: '14px',
+                    },
+                  }}
+                />
+                <Button 
+                  type="submit" 
+                  variant="contained" 
+                  sx={{ 
+                    mt: 3,
+                    minWidth: 200,
+                    height: 48,
+                    borderRadius: 2,
+                    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, #1976D2 30%, #1E88E5 90%)',
+                    }
+                  }}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    'Create Habit'
+                  )}
+                </Button>
+              </Box>
+            </Paper>
+          </Grow>
+        )}
+
+        {/* Statistics Section */}
+        {currentTab === 2 && (
+          <Fade in={true}>
+            <Paper elevation={3} sx={{ 
+              p: 4,
+              borderRadius: 2,
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <Typography variant="h4" gutterBottom sx={{ 
+                fontWeight: 600,
+                color: 'primary.main',
+                mb: 3
+              }}>
+                Statistics
+              </Typography>
+              <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)' }}>
+                <Paper elevation={2} sx={{ p: 3, textAlign: 'center', background: 'rgba(33, 150, 243, 0.1)' }}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Total Habits
+                  </Typography>
+                  <Typography variant="h3" color="text.primary">
+                    {stats.totalHabits}
+                  </Typography>
+                </Paper>
+                <Paper elevation={2} sx={{ p: 3, textAlign: 'center', background: 'rgba(76, 175, 80, 0.1)' }}>
+                  <Typography variant="h6" color="success.main" gutterBottom>
+                    Total Streaks
+                  </Typography>
+                  <Typography variant="h3" color="text.primary">
+                    {stats.totalStreaks}
+                  </Typography>
+                </Paper>
+                <Paper elevation={2} sx={{ p: 3, textAlign: 'center', background: 'rgba(156, 39, 176, 0.1)' }}>
+                  <Typography variant="h6" color="secondary.main" gutterBottom>
+                    Completed Today
+                  </Typography>
+                  <Typography variant="h3" color="text.primary">
+                    {stats.completedToday}
+                  </Typography>
+                </Paper>
+              </Box>
+            </Paper>
+          </Fade>
+        )}
       </Container>
 
       {/* Footer */}
