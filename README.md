@@ -131,4 +131,4 @@ If you run into any issues:
 
 ---
 
-Made with ❤️ by Main Fahad
+Made with ❤️ by Mian Fahad
